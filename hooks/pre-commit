@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	against=f737485baee8b0edc5ef4d00c498305578d630fd
+fi
+
+# Redirect output to stderr.
+exec 1>&2
+
+keywords=(binding.pry console.log)
+keywords_for_grep=$(printf "|%s" "${keywords[@]}")
+keywords_for_grep=${keywords_for_grep:1}
+files_changed=`git diff-index --name-only HEAD --`
+number_of_results=`grep -E "$keywords_for_grep" $files_changed | wc -l | sed 's/^ *//;s/ *$//'`
+
+if [ $number_of_results > 0 ]
+then
+  echo "# Check following lines:"
+  for FILE in ${files_changed[*]} ; do
+    for keyword in ${keywords[*]} ; do
+      if [ "grep -n $keyword $FILE" ]
+      then
+        LINE=`grep -n $keyword $FILE | awk -F ":" '{print $1}'`
+        echo "#\t\033[31m$FILE\033[0m contains $keyword at line \033[33m$LINE\033[0m."
+      fi
+    done
+  done
+  exit 1
+fi
