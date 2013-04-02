@@ -10,20 +10,23 @@ fi
 # Redirect output to stderr.
 exec 1>&2
 
-keywords=(binding.pry console.log throw)
+keywords=(binding.pry throw console.log)
 keywords_for_grep=$(printf "|%s" "${keywords[@]}")
 keywords_for_grep=${keywords_for_grep:1}
 files_changed=`git diff-index --name-only HEAD --`
-number_of_results=`grep -E "$keywords_for_grep" $files_changed | wc -l | sed 's/^ *//;s/ *$//'`
+`git grep -q -E "$keywords_for_grep" $files_changed`
+number_of_results=$?
 
-if [ $number_of_results != "0" ]
+if [ $number_of_results -eq 0 ]
 then
   echo "# Check following lines:"
   for FILE in ${files_changed[*]} ; do
     for keyword in ${keywords[*]} ; do
-      if [ "grep -n $keyword $FILE" ]
+      `git grep -q $keyword $FILE`
+      result_for_file=$?
+      if [ $result_for_file -eq 0 ]
       then
-        LINE=`grep -n $keyword $FILE | awk -F ":" '{print $1}'`
+        LINE=`git grep -n $keyword $FILE | awk -F ":" '{print $2}'`
         echo "#\t\033[31m$FILE\033[0m contains $keyword at line \033[33m$LINE\033[0m."
       fi
     done
