@@ -10,7 +10,7 @@ fi
 # Redirect output to stderr.
 exec 1>&2
 
-keywords=(binding.pry throw console.log)
+keywords=(binding.pry throw console.log debugger)
 keywords_for_grep=$(printf "|%s" "${keywords[@]}")
 keywords_for_grep=${keywords_for_grep:1}
 files_changed=`git diff-index --name-only HEAD --`
