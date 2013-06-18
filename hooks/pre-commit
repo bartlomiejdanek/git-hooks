@@ -1,35 +1,21 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 
-if git rev-parse --verify HEAD >/dev/null 2>&1
-then
-	against=HEAD
-else
-	against=f737485baee8b0edc5ef4d00c498305578d630fd
-fi
+exit 0 if ARGV.include?('--no-verify')
 
-# Redirect output to stderr.
-exec 1>&2
+keywords = %w(binding.pry throw console.log)
+files_changed = %x(git diff-index --name-only HEAD --).split
+%x(git grep -q -E "#{keywords.join('|')}" #{files_changed.join(' ')})
 
-keywords=(binding.pry throw console.log debugger)
-keywords_for_grep=$(printf "|%s" "${keywords[@]}")
-keywords_for_grep=${keywords_for_grep:1}
-files_changed=`git diff-index --name-only HEAD --`
-`git grep -q -E "$keywords_for_grep" $files_changed`
-number_of_results=$?
-
-if [ $number_of_results -eq 0 ]
-then
-  echo "# Check following lines:"
-  for FILE in ${files_changed[*]} ; do
-    for keyword in ${keywords[*]} ; do
-      `git grep -q $keyword $FILE`
-      result_for_file=$?
-      if [ $result_for_file -eq 0 ]
-      then
-        LINE=`git grep -n $keyword $FILE | awk -F ":" '{print $2}'`
-        echo "#\t\033[31m$FILE\033[0m contains $keyword at line \033[33m$LINE\033[0m."
-      fi
-    done
-  done
+if $?.exitstatus.zero?
+  puts "# Check following lines:"
+  files_changed.each do |file|
+    keywords.each do |keyword|
+      %x(git grep -q #{keyword} #{file})
+      if $?.exitstatus.zero?
+        line = %x(git grep -n #{keyword} #{file} | awk -F ":" '{print $2}').split.join(', ')
+        puts "#\t\033[31m#{file}\033[0m contains #{keyword} at line \033[33m#{line}\033[0m."
+      end
+    end
+  end
   exit 1
-fi
+end
