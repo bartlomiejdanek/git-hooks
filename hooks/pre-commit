@@ -2,7 +2,7 @@
 
 exit 0 if ARGV.include?('--no-verify')
 
-keywords = %w(binding.pry throw console.log)
+keywords = %w(binding.pry throw :focus console.log)
 files_changed = %x(git diff-index --name-only HEAD --).split
 %x(git grep -q -E "#{keywords.join('|')}" #{files_changed.join(' ')})
 
